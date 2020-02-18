@@ -199,23 +199,96 @@ leakCols = ["total_pymnt_inv","total_rec_prncp","funded_amnt","funded_amnt_inv",
 dfSub.drop(columns = leakCols, inplace=True)
 
 
-# In[25]:
+# In[19]:
 
 
 dfSub.shape
 
 
-# In[26]:
+# In[20]:
 
 
-54 - 43 == len(leakCols)
+54 - 43 == len(leakCols) - 1
 
 
-# In[29]:
+# ### Numerical features
+
+# In[21]:
 
 
 # Get the statistical parameters again.
 dfSub.describe()
+
+
+# In[23]:
+
+
+dfSub["delinq_amnt"].value_counts()
+
+
+# In[24]:
+
+
+# Drop zero values cols since they are unnecessary,
+# These cols are those with zero means and SDs.
+dfSub.drop(columns=[
+    'collections_12_mths_ex_med','tax_liens','out_prncp','out_prncp_inv','delinq_amnt','acc_now_delinq']
+         , inplace=True)
+
+
+# In[27]:
+
+
+dfSub.shape
+
+
+# ### Categorical features
+
+# In[34]:
+
+
+print(dfSub.info())
+
+
+# In[40]:
+
+
+# To manipulate categorical columns,
+# we need to create a subset data frame which
+# only contains categorical variables.
+dfCat = dfSub.select_dtypes(include=['object'])
+dfCat.shape
+
+
+# In[79]:
+
+
+# Drop the target variable (y)
+catCols = dfCat.drop(columns=['loan_status']).columns.tolist()
+catCols
+
+
+# In[66]:
+
+
+# Strip leading and trailing space of each categorical column
+for i in catCols:
+    dfSub[i] = dfSub[i].str.strip()
+
+
+# In[83]:
+
+
+pd.set_option("display.max_columns", None)
+# Display the categorical columns
+dfSub[catCols].head(10)
+
+
+# In[82]:
+
+
+# Here catCols is a 'list'
+type(catCols)
 
 
 # In[ ]:
