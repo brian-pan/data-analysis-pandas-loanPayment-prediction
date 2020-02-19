@@ -454,7 +454,7 @@ dfSub.loc[dfSub["verification_status"] == "Source Verified", "verification_statu
 dfSub["verification_status"].value_counts()
 
 
-# In[61]:
+# In[52]:
 
 
 # what remaining:
@@ -462,7 +462,7 @@ cateRemainList = list(dfSub.select_dtypes(include=['object']).drop(columns = ["l
 cateRemainList
 
 
-# In[56]:
+# In[53]:
 
 
 # Check if there is any missing value remaining
@@ -470,7 +470,7 @@ checkMis = missingVals(dfSub)
 checkMis
 
 
-# In[58]:
+# In[54]:
 
 
 # get rid of missings by replacing them to 0:
@@ -479,7 +479,7 @@ dfSub["pub_rec_bankruptcies"].fillna(value=0, inplace=True)
 dfSub["revol_util"].fillna(value=0, inplace=True)
 
 
-# In[59]:
+# In[55]:
 
 
 # check again
@@ -487,7 +487,7 @@ checkMis = missingVals(dfSub)
 checkMis
 
 
-# In[65]:
+# In[56]:
 
 
 # define a function to deal with the categorical variables
@@ -511,34 +511,140 @@ def cateToNum(df):
     return df
 
 
-# In[73]:
+# In[57]:
 
 
 dfSub = cateToNum(dfSub)
 
 
-# In[74]:
+# In[58]:
 
 
 dfSub.head()
 
 
-# In[75]:
+# In[59]:
 
 
 dfSub.shape
 
 
-# In[76]:
+# In[60]:
 
 
 # make a copy
 dfFinal = dfSub.copy()
 
 
-# In[78]:
+# In[ ]:
 
 
 # to csv
 dfSub.to_csv("cleaned_data.csv")
+
+
+# ### Stage three: modelling
+
+# In[67]:
+
+
+# correlation checking
+corr = dfFinal.corr()["charged_off"].sort_values(ascending = True)
+corr
+
+
+# In[69]:
+
+
+y = dfFinal['charged_off']
+x = dfFinal.drop(columns = 'charged_off')
+
+
+# In[70]:
+
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25, random_state=0)
+print(x_train.shape)
+print(y_train.shape)
+print(x_test.shape)
+print(y_test.shape)
+
+
+# In[71]:
+
+
+# fit logistic model
+logist= LogisticRegression()
+
+
+# In[72]:
+
+
+logist.fit(x_train, y_train)
+
+
+# In[73]:
+
+
+log_reg_pred = logist.predict_proba(x_test)
+# actural probability:
+y_pred_proba=log_reg_pred[:,1]
+y_pred = logist.predict(x_test)
+
+
+# In[74]:
+
+
+# Show the ROC_CURVE
+import numpy as np
+[fpr, tpr, thr] = metrics.roc_curve(y_test, y_pred_proba)
+idx = np.min(np.where(tpr > 0.95))  # index of the first threshold for which the sensibility > 0.95
+plt.figure()
+plt.plot(fpr, tpr, color='coral', label='ROC curve (area = %0.3f)' % metrics.auc(fpr, tpr))
+plt.plot([0, 1], [0, 1], 'k--')
+plt.plot([0, fpr[idx]], [tpr[idx], tpr[idx]], 'k--', color='blue')
+plt.plot([fpr[idx], fpr[idx]], [0, tpr[idx]], 'k--', color='blue')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate (1 - specificity)', fontsize=14)
+plt.ylabel('True Positive Rate (recall)', fontsize=14)
+plt.title('Receiver operating characteristic (ROC) curve')
+plt.legend(loc="lower right")
+plt.show()
+
+
+# In[83]:
+
+
+# create a random forest classifier 
+rf_model = RandomForestClassifier()
+
+
+# In[84]:
+
+
+rf_model = RandomForestClassifier(
+    n_estimators=200,
+    max_depth=5
+)
+
+rf_model.fit(X=x_train, y=y_train)
+
+# For illustration purposes, we are instructing the model to build 200 trees, 
+# where each tree can only grow up to the depth of 5
+
+
+# In[85]:
+
+
+# get the feature importances
+rf_model.feature_importances_
+
+
+# In[86]:
+
+
+feature_importance_df = pd.DataFrame(list(zip(rf_model.feature_importances_, list(x_train.columns))))
+feature_importance_df.columns = ['feature.importance', 'feature']
+feature_importance_df.sort_values(by='feature.importance', ascending=False).head(20)
 
