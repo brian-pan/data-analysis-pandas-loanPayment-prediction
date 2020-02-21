@@ -529,14 +529,14 @@ dfSub.head()
 dfSub.shape
 
 
-# In[60]:
+# In[76]:
 
 
 # make a copy
 dfFinal = dfSub.copy()
 
 
-# In[ ]:
+# In[61]:
 
 
 # to csv
@@ -545,22 +545,22 @@ dfSub.to_csv("cleaned_data.csv")
 
 # ### Stage three: modelling
 
-# In[67]:
+# In[77]:
 
 
 # correlation checking
-corr = dfFinal.corr()["charged_off"].sort_values(ascending = True)
+corr = dfFinal.corr()["charged_off"].sort_values(ascending = False)
 corr
 
 
-# In[69]:
+# In[78]:
 
 
 y = dfFinal['charged_off']
 x = dfFinal.drop(columns = 'charged_off')
 
 
-# In[70]:
+# In[79]:
 
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25, random_state=0)
@@ -570,20 +570,20 @@ print(x_test.shape)
 print(y_test.shape)
 
 
-# In[71]:
+# In[80]:
 
 
 # fit logistic model
 logist= LogisticRegression()
 
 
-# In[72]:
+# In[81]:
 
 
 logist.fit(x_train, y_train)
 
 
-# In[73]:
+# In[82]:
 
 
 log_reg_pred = logist.predict_proba(x_test)
@@ -592,7 +592,7 @@ y_pred_proba=log_reg_pred[:,1]
 y_pred = logist.predict(x_test)
 
 
-# In[74]:
+# In[83]:
 
 
 # Show the ROC_CURVE
@@ -613,38 +613,74 @@ plt.legend(loc="lower right")
 plt.show()
 
 
-# In[83]:
+# In[84]:
 
 
-# create a random forest classifier 
+# Random Forest
 rf_model = RandomForestClassifier()
 
 
-# In[84]:
+# In[85]:
 
 
 rf_model = RandomForestClassifier(
     n_estimators=200,
-    max_depth=5
-)
-
+    max_depth=5)
 rf_model.fit(X=x_train, y=y_train)
 
 # For illustration purposes, we are instructing the model to build 200 trees, 
 # where each tree can only grow up to the depth of 5
 
 
-# In[85]:
+# In[86]:
 
 
 # get the feature importances
 rf_model.feature_importances_
 
 
-# In[86]:
+# In[87]:
 
 
 feature_importance_df = pd.DataFrame(list(zip(rf_model.feature_importances_, list(x_train.columns))))
 feature_importance_df.columns = ['feature.importance', 'feature']
 feature_importance_df.sort_values(by='feature.importance', ascending=False).head(20)
+
+
+# In[88]:
+
+
+rf_model_pred = rf_model.predict_proba(x_test)
+y_pred_proba=rf_model_pred[:,1]
+y_pred = rf_model.predict(x_test)
+
+
+# In[93]:
+
+
+import numpy as np
+[fpr, tpr, thr] = metrics.roc_curve(y_test, y_pred_proba)
+idx = np.min(np.where(tpr > 0.95))  # index of the first threshold for which the sensibility > 0.95
+plt.figure()
+plt.plot(fpr, tpr, color='coral', label='ROC curve (area = %0.3f)' % metrics.auc(fpr, tpr))
+plt.plot([0, 1], [0, 1], 'k--')
+plt.plot([0, fpr[idx]], [tpr[idx], tpr[idx]], 'k--', color='blue')
+plt.plot([fpr[idx], fpr[idx]], [0, tpr[idx]], 'k--', color='blue')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate (1 - specificity)', fontsize=14)
+plt.ylabel('True Positive Rate (recall)', fontsize=14)
+plt.title('Receiver operating characteristic (ROC) curve')
+plt.legend(loc="lower right")
+plt.show()
+
+
+# In[ ]:
+
+
+# Idk why ROC area is 1, still trying to fix the problem...
+# And I'm currently still learning random forest model,
+# this will be fixed and finished later. (To be Con'd)
+
+# End of project.
 
